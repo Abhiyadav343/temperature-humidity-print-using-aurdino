@@ -1,72 +1,73 @@
-//We'll start by adding our libraries
+#define echo 8    //Echo pin
+#define trigger 9 //Trigger pin
 
-#include <LiquidCrystal.h>
+#define buzzer 7 // choose the pin for the Buzzer Alert
 
-#include <SimpleDHT.h>
+#define R_led 4 // choose the pin for the Red Led
+#define Y_led 3 // choose the pin for the Yellow Led
+#define G_led 2 // choose the pin for the Green Led
 
-//Declaring digital pin no 6 as the dht11 data pin
+int distance_cm;
+int flag=0;
 
-int pinDHT11 = 6;
-SimpleDHT11 dht11;
+void setup() { // put your setup code here, to run once 
+Serial.begin(9600);
 
-//Declaring the lcd pins
+pinMode(echo, INPUT);// declare ultrasonic sensor Echo pin as input
+pinMode(trigger, OUTPUT); // declare ultrasonic sensor Trigger pin as Output 
 
-const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
-LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+pinMode(buzzer,OUTPUT); // declare Buzzer as output
 
-void setup() {
-// Don't forget to choose 9600 at the port screen
-  
-  Serial.begin(9600);
+pinMode(R_led,OUTPUT); // declare Red LED as output
+pinMode(Y_led,OUTPUT); // declare Yellow LED as output
+pinMode(G_led,OUTPUT); // declare Green LED as output
+
+delay(100); 
+} 
  
-//Telling our lcd to start up
-  
-  lcd.begin(16, 2);
-   
-   
+ 
+void loop() { 
+
+distance_cm = Ultrasonic_read();  
+
+     if(distance_cm<3){ //Alert Situation
+flag = !flag;
+digitalWrite(R_led, HIGH);// LED Turn On   
+digitalWrite(Y_led, LOW); // LED Turn Off 
+digitalWrite(G_led, LOW); // LED Turn Off   
 }
 
-void loop() {
+else if(distance_cm>=5 && distance_cm<12){ //Ok Parking
+flag=0; 
+digitalWrite(R_led, LOW); // LED Turn Off   
+digitalWrite(Y_led, HIGH);// LED Turn On 
+digitalWrite(G_led, LOW); // LED Turn Off 
+}
 
-  //These serial codes are for getting readings on the port screen aswell as the LCD display, since they'll offer us a more detailed interface
-  
-  
-  Serial.println("=================================");
-  Serial.println("DHT11 readings...");
-  
- 
-  byte temperature = 0;
-  byte humidity = 0;
-  int err = SimpleDHTErrSuccess;
+else if(distance_cm>=20 && distance_cm<25){ //Go further now
+flag=0; 
+digitalWrite(R_led, LOW); // LED Turn Off   
+digitalWrite(Y_led, LOW); // LED Turn Off 
+digitalWrite(G_led, HIGH);// LED Turn On 
+ }
+else{ //if there is no vehicle
+flag=0; 
+digitalWrite(R_led, LOW); // LED Turn Off   
+digitalWrite(Y_led, LOW); // LED Turn Off 
+digitalWrite(G_led, LOW); // LED Turn Off 
+}
 
-  //This bit will tell our Arduino what to do if there is some sort of an error at getting readings from our sensor
-  if ((err = dht11.read(pinDHT11, &temperature, &humidity, NULL)) != SimpleDHTErrSuccess) {
-    Serial.print("No reading , err="); Serial.println(err);delay(1000);
-    return;
-  }
-  
-  Serial.print("Readings: ");
-  Serial.print((int)temperature); Serial.print(" Celcius, ");
-  Serial.print((int)humidity); Serial.println(" %");
- 
-  //Telling our lcd to refresh itself every 0.75 seconds
-  lcd.clear();
- 
-  //Choosing the first line and row
-  lcd.setCursor(0,0);
-  //Typing Temp: to the first line starting from the first row
-  lcd.print("Temp: ");
-  //Typing the temperature readings after "Temp: " 
-  lcd.print((int)temperature);
-  //Choosing the second line and first row
-  lcd.setCursor(0,1);
-  //Typing Humidity(%): to the second line starting from the first row
-  lcd.print("Humidity(%): ");
-  //Typing the humidity readings after "Humidity(%): "
-  lcd.print((int)humidity);
- 
-  
-  
-  
-  delay(750);
+digitalWrite(buzzer, flag);
+Serial.print("cm: "); Serial.println(distance_cm);   
+delay(150);
+}
+
+//Ultrasonic_read
+int Ultrasonic_read(){
+digitalWrite(trigger, LOW); 
+delayMicroseconds(2); 
+digitalWrite(trigger, HIGH); 
+delayMicroseconds(10); 
+long time = pulseIn(echo, HIGH); 
+return distance_cm = time / 28.5 / 2;
 }
